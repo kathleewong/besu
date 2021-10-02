@@ -698,76 +698,219 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       description = "Path to a file containing the fingerprints of the authorized privacy enclave.")
   private final Path privacyTlsKnownEnclaveFile = null;
 
-  @Option(
-      names = {"--metrics-enabled"},
-      description = "Set to start the metrics exporter (default: ${DEFAULT-VALUE})")
-  private final Boolean isMetricsEnabled = false;
+  @CommandLine.ArgGroup(validate = false, heading = "Metrics Options\n")
+    MetricsGroup MetricsOptions;
+    class MetricsGroup {
+      @Option(
+          names = {"--metrics-enabled"},
+          description = "Set to start the metrics exporter (default: ${DEFAULT-VALUE})")
+      private final Boolean isMetricsEnabled = false;
 
-  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
-  @Option(
-      names = {"--metrics-protocol"},
+      @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+      @Option(
+          names = {"--metrics-protocol"},
+          description =
+              "Metrics protocol, one of PROMETHEUS, OPENTELEMETRY or NONE. (default: ${DEFAULT-VALUE})")
+      private MetricsProtocol metricsProtocol = PROMETHEUS;
+
+      @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+      @Option(
+          names = {"--metrics-host"},
+          paramLabel = MANDATORY_HOST_FORMAT_HELP,
+          description = "Host for the metrics exporter to listen on (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private String metricsHost = autoDiscoverDefaultIP().getHostAddress();
+
+      @Option(
+          names = {"--metrics-port"},
+          paramLabel = MANDATORY_PORT_FORMAT_HELP,
+          description = "Port for the metrics exporter to listen on (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private final Integer metricsPort = DEFAULT_METRICS_PORT;
+
+      @Option(
+          names = {"--metrics-category", "--metrics-categories"},
+          paramLabel = "<category name>",
+          split = ",",
+          arity = "1..*",
+          description =
+              "Comma separated list of categories to track metrics for (default: ${DEFAULT-VALUE})")
+      private final Set<MetricCategory> metricCategories = DEFAULT_METRIC_CATEGORIES;
+
+      @Option(
+          names = {"--metrics-push-enabled"},
+          description = "Enable the metrics push gateway integration (default: ${DEFAULT-VALUE})")
+      private final Boolean isMetricsPushEnabled = false;
+
+      @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+      @Option(
+          names = {"--metrics-push-host"},
+          paramLabel = MANDATORY_HOST_FORMAT_HELP,
+          description = "Host of the Prometheus Push Gateway for push mode (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private String metricsPushHost = autoDiscoverDefaultIP().getHostAddress();
+
+      @Option(
+          names = {"--metrics-push-port"},
+          paramLabel = MANDATORY_PORT_FORMAT_HELP,
+          description = "Port of the Prometheus Push Gateway for push mode (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private final Integer metricsPushPort = DEFAULT_METRICS_PUSH_PORT;
+
+      @Option(
+          names = {"--metrics-push-interval"},
+          paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
+          description =
+              "Interval in seconds to push metrics when in push mode (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private final Integer metricsPushInterval = 15;
+
+      @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+      @Option(
+          names = {"--metrics-push-prometheus-job"},
+          description = "Job name to use when in push mode (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private String metricsPrometheusJob = "besu-client";
+    }
+
+  @CommandLine.ArgGroup(validate = false, heading = "Miner Options\n")
+    MinerGroup MinerOptions;
+    static class MinerGroup {
+      @Option(
+          names = {"--miner-enabled"},
+          description = "Set if node will perform mining (default: ${DEFAULT-VALUE})")
+      private final Boolean isMiningEnabled = false;
+
+      @Option(
+      names = {"--miner-extra-data"},
       description =
-          "Metrics protocol, one of PROMETHEUS, OPENTELEMETRY or NONE. (default: ${DEFAULT-VALUE})")
-  private MetricsProtocol metricsProtocol = PROMETHEUS;
-
-  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
-  @Option(
-      names = {"--metrics-host"},
-      paramLabel = MANDATORY_HOST_FORMAT_HELP,
-      description = "Host for the metrics exporter to listen on (default: ${DEFAULT-VALUE})",
+          "A hex string representing the (32) bytes to be included in the extra data "
+              + "field of a mined block (default: ${DEFAULT-VALUE})",
       arity = "1")
-  private String metricsHost = autoDiscoverDefaultIP().getHostAddress();
+      private final Bytes extraData = DEFAULT_EXTRA_DATA;
 
-  @Option(
-      names = {"--metrics-port"},
-      paramLabel = MANDATORY_PORT_FORMAT_HELP,
-      description = "Port for the metrics exporter to listen on (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Integer metricsPort = DEFAULT_METRICS_PORT;
+      @Option(
+          names = {"--miner-stratum-enabled"},
+          description = "Set if node will perform Stratum mining (default: ${DEFAULT-VALUE})")
+      private final Boolean iStratumMiningEnabled = false;
 
-  @Option(
-      names = {"--metrics-category", "--metrics-categories"},
-      paramLabel = "<category name>",
-      split = ",",
-      arity = "1..*",
-      description =
-          "Comma separated list of categories to track metrics for (default: ${DEFAULT-VALUE})")
-  private final Set<MetricCategory> metricCategories = DEFAULT_METRIC_CATEGORIES;
+      @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+      @Option(
+          names = {"--miner-stratum-host"},
+          description = "Host for Stratum network mining service (default: ${DEFAULT-VALUE})")
+      private String stratumNetworkInterface = "0.0.0.0";
 
-  @Option(
-      names = {"--metrics-push-enabled"},
-      description = "Enable the metrics push gateway integration (default: ${DEFAULT-VALUE})")
-  private final Boolean isMetricsPushEnabled = false;
+      @Option(
+          names = {"--miner-stratum-port"},
+          description = "Stratum port binding (default: ${DEFAULT-VALUE})")
+      private final Integer stratumPort = 8008;
 
-  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
-  @Option(
-      names = {"--metrics-push-host"},
-      paramLabel = MANDATORY_HOST_FORMAT_HELP,
-      description = "Host of the Prometheus Push Gateway for push mode (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private String metricsPushHost = autoDiscoverDefaultIP().getHostAddress();
+      @Option(
+          names = {"--miner-coinbase"},
+          description =
+              "Account to which mining rewards are paid. You must specify a valid coinbase if "
+                  + "mining is enabled using --miner-enabled option",
+          arity = "1")
+      private final Address coinbase = null;
+    }
+  
+  @CommandLine.ArgGroup(validate = false, heading = "Permissions Options\n")
+    PermissionsGroup PermissionsOptions;
+    static class PermissionsGroup {
+      @Option(
+          names = {"--permissions-nodes-config-file-enabled"},
+          description = "Enable node level permissions (default: ${DEFAULT-VALUE})")
+      private final Boolean permissionsNodesEnabled = false;
 
-  @Option(
-      names = {"--metrics-push-port"},
-      paramLabel = MANDATORY_PORT_FORMAT_HELP,
-      description = "Port of the Prometheus Push Gateway for push mode (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Integer metricsPushPort = DEFAULT_METRICS_PUSH_PORT;
+      @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+      @CommandLine.Option(
+          names = {"--permissions-nodes-config-file"},
+          description =
+              "Node permissioning config TOML file (default: a file named \"permissions_config.toml\" in the Besu data folder)")
+      private String nodePermissionsConfigFile = null;
 
-  @Option(
-      names = {"--metrics-push-interval"},
-      paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
-      description =
-          "Interval in seconds to push metrics when in push mode (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Integer metricsPushInterval = 15;
+      @Option(
+          names = {"--permissions-accounts-config-file-enabled"},
+          description = "Enable account level permissions (default: ${DEFAULT-VALUE})")
+      private final Boolean permissionsAccountsEnabled = false;
 
-  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
-  @Option(
-      names = {"--metrics-push-prometheus-job"},
-      description = "Job name to use when in push mode (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private String metricsPrometheusJob = "besu-client";
+      @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+      @CommandLine.Option(
+          names = {"--permissions-accounts-config-file"},
+          description =
+              "Account permissioning config TOML file (default: a file named \"permissions_config.toml\" in the Besu data folder)")
+      private String accountPermissionsConfigFile = null;
+
+      @Option(
+          names = {"--permissions-nodes-contract-address"},
+          description = "Address of the node permissioning smart contract",
+          arity = "1")
+      private final Address permissionsNodesContractAddress = null;
+
+      @Option(
+          names = {"--permissions-nodes-contract-version"},
+          description = "Version of the EEA Node Permissioning interface (default: ${DEFAULT-VALUE})")
+      private final Integer permissionsNodesContractVersion = 1;
+
+      @Option(
+          names = {"--permissions-nodes-contract-enabled"},
+          description = "Enable node level permissions via smart contract (default: ${DEFAULT-VALUE})")
+      private final Boolean permissionsNodesContractEnabled = false;
+
+      @Option(
+          names = {"--permissions-accounts-contract-address"},
+          description = "Address of the account permissioning smart contract",
+          arity = "1")
+      private final Address permissionsAccountsContractAddress = null;
+
+      @Option(
+          names = {"--permissions-accounts-contract-enabled"},
+          description =
+              "Enable account level permissions via smart contract (default: ${DEFAULT-VALUE})")
+      private final Boolean permissionsAccountsContractEnabled = false;
+    }
+
+  @CommandLine.ArgGroup(validate = false, heading = "Tx Pool Options\n")
+    TxPoolGroup TxPoolOptions;
+    static class TxPoolGroup {
+      @Option(
+          names = {"--tx-pool-max-size"},
+          paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
+          description =
+              "Maximum number of pending transactions that will be kept in the transaction pool (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private final Integer txPoolMaxSize = TransactionPoolConfiguration.MAX_PENDING_TRANSACTIONS;
+
+      @Option(
+          names = {"--tx-pool-hashes-max-size"},
+          paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
+          description =
+              "Maximum number of pending transaction hashes that will be kept in the transaction pool (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private final Integer pooledTransactionHashesSize =
+          TransactionPoolConfiguration.MAX_PENDING_TRANSACTIONS_HASHES;
+
+      @Option(
+          names = {"--tx-pool-retention-hours"},
+          paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
+          description =
+              "Maximum retention period of pending transactions in hours (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private final Integer pendingTxRetentionPeriod =
+          TransactionPoolConfiguration.DEFAULT_TX_RETENTION_HOURS;
+
+      @Option(
+          names = {"--tx-pool-price-bump"},
+          paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
+          converter = PercentageConverter.class,
+          description =
+              "Price bump percentage to replace an already existing transaction  (default: ${DEFAULT-VALUE})",
+          arity = "1")
+      private final Integer priceBump = TransactionPoolConfiguration.DEFAULT_PRICE_BUMP.getValue();
+    }
+
+
+
 
   @Option(
       names = {"--host-allowlist"},
@@ -805,35 +948,6 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private final Long reorgLoggingThreshold = 6L;
 
   @Option(
-      names = {"--miner-enabled"},
-      description = "Set if node will perform mining (default: ${DEFAULT-VALUE})")
-  private final Boolean isMiningEnabled = false;
-
-  @Option(
-      names = {"--miner-stratum-enabled"},
-      description = "Set if node will perform Stratum mining (default: ${DEFAULT-VALUE})")
-  private final Boolean iStratumMiningEnabled = false;
-
-  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
-  @Option(
-      names = {"--miner-stratum-host"},
-      description = "Host for Stratum network mining service (default: ${DEFAULT-VALUE})")
-  private String stratumNetworkInterface = "0.0.0.0";
-
-  @Option(
-      names = {"--miner-stratum-port"},
-      description = "Stratum port binding (default: ${DEFAULT-VALUE})")
-  private final Integer stratumPort = 8008;
-
-  @Option(
-      names = {"--miner-coinbase"},
-      description =
-          "Account to which mining rewards are paid. You must specify a valid coinbase if "
-              + "mining is enabled using --miner-enabled option",
-      arity = "1")
-  private final Address coinbase = null;
-
-  @Option(
       names = {"--min-gas-price"},
       description =
           "Minimum price (in Wei) offered by a transaction for it to be included in a mined "
@@ -855,70 +969,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private final Double minBlockOccupancyRatio = DEFAULT_MIN_BLOCK_OCCUPANCY_RATIO;
 
   @Option(
-      names = {"--miner-extra-data"},
-      description =
-          "A hex string representing the (32) bytes to be included in the extra data "
-              + "field of a mined block (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Bytes extraData = DEFAULT_EXTRA_DATA;
-
-  @Option(
       names = {"--pruning-enabled"},
       description =
           "Enable disk-space saving optimization that removes old state that is unlikely to be required (default: ${DEFAULT-VALUE})")
   private final Boolean pruningEnabled = false;
-
-  @Option(
-      names = {"--permissions-nodes-config-file-enabled"},
-      description = "Enable node level permissions (default: ${DEFAULT-VALUE})")
-  private final Boolean permissionsNodesEnabled = false;
-
-  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
-  @CommandLine.Option(
-      names = {"--permissions-nodes-config-file"},
-      description =
-          "Node permissioning config TOML file (default: a file named \"permissions_config.toml\" in the Besu data folder)")
-  private String nodePermissionsConfigFile = null;
-
-  @Option(
-      names = {"--permissions-accounts-config-file-enabled"},
-      description = "Enable account level permissions (default: ${DEFAULT-VALUE})")
-  private final Boolean permissionsAccountsEnabled = false;
-
-  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
-  @CommandLine.Option(
-      names = {"--permissions-accounts-config-file"},
-      description =
-          "Account permissioning config TOML file (default: a file named \"permissions_config.toml\" in the Besu data folder)")
-  private String accountPermissionsConfigFile = null;
-
-  @Option(
-      names = {"--permissions-nodes-contract-address"},
-      description = "Address of the node permissioning smart contract",
-      arity = "1")
-  private final Address permissionsNodesContractAddress = null;
-
-  @Option(
-      names = {"--permissions-nodes-contract-version"},
-      description = "Version of the EEA Node Permissioning interface (default: ${DEFAULT-VALUE})")
-  private final Integer permissionsNodesContractVersion = 1;
-
-  @Option(
-      names = {"--permissions-nodes-contract-enabled"},
-      description = "Enable node level permissions via smart contract (default: ${DEFAULT-VALUE})")
-  private final Boolean permissionsNodesContractEnabled = false;
-
-  @Option(
-      names = {"--permissions-accounts-contract-address"},
-      description = "Address of the account permissioning smart contract",
-      arity = "1")
-  private final Address permissionsAccountsContractAddress = null;
-
-  @Option(
-      names = {"--permissions-accounts-contract-enabled"},
-      description =
-          "Enable account level permissions via smart contract (default: ${DEFAULT-VALUE})")
-  private final Boolean permissionsAccountsContractEnabled = false;
 
   @Option(
       names = {"--privacy-enabled"},
@@ -975,41 +1029,6 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       description =
           "Sets target gas limit per block. If set each block's gas limit will approach this setting over time if the current gas limit is different.")
   private final Long targetGasLimit = null;
-
-  @Option(
-      names = {"--tx-pool-max-size"},
-      paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
-      description =
-          "Maximum number of pending transactions that will be kept in the transaction pool (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Integer txPoolMaxSize = TransactionPoolConfiguration.MAX_PENDING_TRANSACTIONS;
-
-  @Option(
-      names = {"--tx-pool-hashes-max-size"},
-      paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
-      description =
-          "Maximum number of pending transaction hashes that will be kept in the transaction pool (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Integer pooledTransactionHashesSize =
-      TransactionPoolConfiguration.MAX_PENDING_TRANSACTIONS_HASHES;
-
-  @Option(
-      names = {"--tx-pool-retention-hours"},
-      paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
-      description =
-          "Maximum retention period of pending transactions in hours (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Integer pendingTxRetentionPeriod =
-      TransactionPoolConfiguration.DEFAULT_TX_RETENTION_HOURS;
-
-  @Option(
-      names = {"--tx-pool-price-bump"},
-      paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
-      converter = PercentageConverter.class,
-      description =
-          "Price bump percentage to replace an already existing transaction  (default: ${DEFAULT-VALUE})",
-      arity = "1")
-  private final Integer priceBump = TransactionPoolConfiguration.DEFAULT_PRICE_BUMP.getValue();
 
   @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
   @Option(
@@ -1450,13 +1469,13 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
   @SuppressWarnings("ConstantConditions")
   private void validateMiningParams() {
-    if (isMiningEnabled && coinbase == null) {
+    if (MinerOptions.isMiningEnabled && MinerOptions.coinbase == null) {
       throw new ParameterException(
           this.commandLine,
           "Unable to mine without a valid coinbase. Either disable mining (remove --miner-enabled) "
               + "or specify the beneficiary of mining (via --miner-coinbase <Address>)");
     }
-    if (!isMiningEnabled && iStratumMiningEnabled) {
+    if (!MinerOptions.isMiningEnabled && MinerOptions.iStratumMiningEnabled) {
       throw new ParameterException(
           this.commandLine,
           "Unable to mine with Stratum if mining is disabled. Either disable Stratum mining (remove --miner-stratum-enabled) "
@@ -1547,7 +1566,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
         logger,
         commandLine,
         "--miner-enabled",
-        !isMiningEnabled,
+        !MinerOptions.isMiningEnabled,
         asList(
             "--miner-coinbase",
             "--min-gas-price",
@@ -1698,14 +1717,14 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
         .dataDirectory(dataDir())
         .miningParameters(
             new MiningParameters.Builder()
-                .coinbase(coinbase)
+                .coinbase(MinerOptions.coinbase)
                 .targetGasLimit(targetGasLimit)
                 .minTransactionGasPrice(minTransactionGasPrice)
-                .extraData(extraData)
-                .enabled(isMiningEnabled)
-                .stratumMiningEnabled(iStratumMiningEnabled)
-                .stratumNetworkInterface(stratumNetworkInterface)
-                .stratumPort(stratumPort)
+                .extraData(MinerOptions.extraData)
+                .enabled(MinerOptions.isMiningEnabled)
+                .stratumMiningEnabled(MinerOptions.iStratumMiningEnabled)
+                .stratumNetworkInterface(MinerOptions.stratumNetworkInterface)
+                .stratumPort(MinerOptions.stratumPort)
                 .stratumExtranonce(unstableMiningOptions.getStratumExtranonce())
                 .minBlockOccupancyRatio(minBlockOccupancyRatio)
                 .remoteSealersLimit(unstableMiningOptions.getRemoteSealersLimit())
@@ -1940,7 +1959,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   public MetricsConfiguration metricsConfiguration() {
-    if (isMetricsEnabled && isMetricsPushEnabled) {
+    if (MetricsOptions.isMetricsEnabled && MetricsOptions.isMetricsPushEnabled) {
       throw new ParameterException(
           this.commandLine,
           "--metrics-enabled option and --metrics-push-enabled option can't be used at the same "
@@ -1951,14 +1970,14 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
         logger,
         commandLine,
         "--metrics-enabled",
-        !isMetricsEnabled,
+        !MetricsOptions.isMetricsEnabled,
         asList("--metrics-host", "--metrics-port"));
 
     CommandLineUtils.checkOptionDependencies(
         logger,
         commandLine,
         "--metrics-push-enabled",
-        !isMetricsPushEnabled,
+        !MetricsOptions.isMetricsPushEnabled,
         asList(
             "--metrics-push-host",
             "--metrics-push-port",
@@ -1967,17 +1986,17 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
     return unstableMetricsCLIOptions
         .toDomainObject()
-        .enabled(isMetricsEnabled)
-        .host(metricsHost)
-        .port(metricsPort)
-        .protocol(metricsProtocol)
-        .metricCategories(metricCategories)
-        .pushEnabled(isMetricsPushEnabled)
-        .pushHost(metricsPushHost)
-        .pushPort(metricsPushPort)
-        .pushInterval(metricsPushInterval)
+        .enabled(MetricsOptions.isMetricsEnabled)
+        .host(MetricsOptions.metricsHost)
+        .port(MetricsOptions.metricsPort)
+        .protocol(MetricsOptions.metricsProtocol)
+        .metricCategories(MetricsOptions.metricCategories)
+        .pushEnabled(MetricsOptions.isMetricsPushEnabled)
+        .pushHost(MetricsOptions.metricsPushHost)
+        .pushPort(MetricsOptions.metricsPushPort)
+        .pushInterval(MetricsOptions.metricsPushInterval)
         .hostsAllowlist(hostsAllowlist)
-        .prometheusJob(metricsPrometheusJob)
+        .prometheusJob(MetricsOptions.metricsPrometheusJob)
         .build();
   }
 
@@ -1993,30 +2012,30 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     final Optional<LocalPermissioningConfiguration> localPermissioningConfigurationOptional;
     if (localPermissionsEnabled()) {
       final Optional<String> nodePermissioningConfigFile =
-          Optional.ofNullable(nodePermissionsConfigFile);
+          Optional.ofNullable(PermissionsOptions.nodePermissionsConfigFile);
       final Optional<String> accountPermissioningConfigFile =
-          Optional.ofNullable(accountPermissionsConfigFile);
+          Optional.ofNullable(PermissionsOptions.accountPermissionsConfigFile);
 
       final LocalPermissioningConfiguration localPermissioningConfiguration =
           PermissioningConfigurationBuilder.permissioningConfiguration(
-              permissionsNodesEnabled,
+              PermissionsOptions.permissionsNodesEnabled,
               getEnodeDnsConfiguration(),
               nodePermissioningConfigFile.orElse(getDefaultPermissioningFilePath()),
-              permissionsAccountsEnabled,
+              PermissionsOptions.permissionsAccountsEnabled,
               accountPermissioningConfigFile.orElse(getDefaultPermissioningFilePath()));
 
       localPermissioningConfigurationOptional = Optional.of(localPermissioningConfiguration);
     } else {
-      if (nodePermissionsConfigFile != null && !permissionsNodesEnabled) {
+      if (PermissionsOptions.nodePermissionsConfigFile != null && !PermissionsOptions.permissionsNodesEnabled) {
         logger.warn(
             "Node permissioning config file set {} but no permissions enabled",
-            nodePermissionsConfigFile);
+            PermissionsOptions.nodePermissionsConfigFile);
       }
 
-      if (accountPermissionsConfigFile != null && !permissionsAccountsEnabled) {
+      if (PermissionsOptions.accountPermissionsConfigFile != null && !PermissionsOptions.permissionsAccountsEnabled) {
         logger.warn(
             "Account permissioning config file set {} but no permissions enabled",
-            accountPermissionsConfigFile);
+            PermissionsOptions.accountPermissionsConfigFile);
       }
       localPermissioningConfigurationOptional = Optional.empty();
     }
@@ -2024,40 +2043,40 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     final SmartContractPermissioningConfiguration smartContractPermissioningConfiguration =
         SmartContractPermissioningConfiguration.createDefault();
 
-    if (permissionsNodesContractEnabled) {
-      if (permissionsNodesContractAddress == null) {
+    if (PermissionsOptions.permissionsNodesContractEnabled) {
+      if (PermissionsOptions.permissionsNodesContractAddress == null) {
         throw new ParameterException(
             this.commandLine,
             "No node permissioning contract address specified. Cannot enable smart contract based node permissioning.");
       } else {
         smartContractPermissioningConfiguration.setSmartContractNodeAllowlistEnabled(
-            permissionsNodesContractEnabled);
+            PermissionsOptions.permissionsNodesContractEnabled);
         smartContractPermissioningConfiguration.setNodeSmartContractAddress(
-            permissionsNodesContractAddress);
+            PermissionsOptions.permissionsNodesContractAddress);
         smartContractPermissioningConfiguration.setNodeSmartContractInterfaceVersion(
-            permissionsNodesContractVersion);
+            PermissionsOptions.permissionsNodesContractVersion);
       }
-    } else if (permissionsNodesContractAddress != null) {
+    } else if (PermissionsOptions.permissionsNodesContractAddress != null) {
       logger.warn(
           "Node permissioning smart contract address set {} but smart contract node permissioning is disabled.",
-          permissionsNodesContractAddress);
+          PermissionsOptions.permissionsNodesContractAddress);
     }
 
-    if (permissionsAccountsContractEnabled) {
-      if (permissionsAccountsContractAddress == null) {
+    if (PermissionsOptions.permissionsAccountsContractEnabled) {
+      if (PermissionsOptions.permissionsAccountsContractAddress == null) {
         throw new ParameterException(
             this.commandLine,
             "No account permissioning contract address specified. Cannot enable smart contract based account permissioning.");
       } else {
         smartContractPermissioningConfiguration.setSmartContractAccountAllowlistEnabled(
-            permissionsAccountsContractEnabled);
+            PermissionsOptions.permissionsAccountsContractEnabled);
         smartContractPermissioningConfiguration.setAccountSmartContractAddress(
-            permissionsAccountsContractAddress);
+            PermissionsOptions.permissionsAccountsContractAddress);
       }
-    } else if (permissionsAccountsContractAddress != null) {
+    } else if (PermissionsOptions.permissionsAccountsContractAddress != null) {
       logger.warn(
           "Account permissioning smart contract address set {} but smart contract account permissioning is disabled.",
-          permissionsAccountsContractAddress);
+          PermissionsOptions.permissionsAccountsContractAddress);
     }
 
     final PermissioningConfiguration permissioningConfiguration =
@@ -2085,11 +2104,11 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private boolean localPermissionsEnabled() {
-    return permissionsAccountsEnabled || permissionsNodesEnabled;
+    return PermissionsOptions.permissionsAccountsEnabled || PermissionsOptions.permissionsNodesEnabled;
   }
 
   private boolean contractPermissionsEnabled() {
-    return permissionsNodesContractEnabled || permissionsAccountsContractEnabled;
+    return PermissionsOptions.permissionsNodesContractEnabled || PermissionsOptions.permissionsAccountsContractEnabled;
   }
 
   private PrivacyParameters privacyParameters(final KeyValueStorageProvider storageProvider) {
@@ -2296,10 +2315,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private TransactionPoolConfiguration buildTransactionPoolConfiguration() {
     return unstableTransactionPoolOptions
         .toDomainObject()
-        .txPoolMaxSize(txPoolMaxSize)
-        .pooledTransactionHashesSize(pooledTransactionHashesSize)
-        .pendingTxRetentionPeriod(pendingTxRetentionPeriod)
-        .priceBump(Percentage.fromInt(priceBump))
+        .txPoolMaxSize(TxPoolOptions.txPoolMaxSize)
+        .pooledTransactionHashesSize(TxPoolOptions.pooledTransactionHashesSize)
+        .pendingTxRetentionPeriod(TxPoolOptions.pendingTxRetentionPeriod)
+        .priceBump(Percentage.fromInt(TxPoolOptions.priceBump))
         .txFeeCap(txFeeCap)
         .build();
   }
@@ -2630,9 +2649,9 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     addPortIfEnabled(effectivePorts, graphQLHttpPort, isGraphQLHttpEnabled);
     addPortIfEnabled(effectivePorts, rpcHttpPort, isRpcHttpEnabled);
     addPortIfEnabled(effectivePorts, rpcWsPort, isRpcWsEnabled);
-    addPortIfEnabled(effectivePorts, metricsPort, isMetricsEnabled);
-    addPortIfEnabled(effectivePorts, metricsPushPort, isMetricsPushEnabled);
-    addPortIfEnabled(effectivePorts, stratumPort, iStratumMiningEnabled);
+    addPortIfEnabled(effectivePorts, MetricsOptions.metricsPort, MetricsOptions.isMetricsEnabled);
+    addPortIfEnabled(effectivePorts, MetricsOptions.metricsPushPort, MetricsOptions.isMetricsPushEnabled);
+    addPortIfEnabled(effectivePorts, MinerOptions.stratumPort, MinerOptions.iStratumMiningEnabled);
     return effectivePorts;
   }
 
